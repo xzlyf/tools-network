@@ -6,7 +6,6 @@ package com.xz.tool.network;
  * @date 2021/6/13
  */
 public class Test {
-	public static long test() {
-		return System.currentTimeMillis();
+	public static void main(String[] args) {
 	}
 }

@@ -31,4 +31,9 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+    //外部导入
+    //implementation 'com.github.xzlyf:tools-network:0.0.1'
+    //本地导入
+    implementation project(path: ':network')
+
 }
