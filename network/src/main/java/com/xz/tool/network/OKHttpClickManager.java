@@ -21,7 +21,6 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -372,35 +371,63 @@ public class OKHttpClickManager {
 	 * 通用GET请求
 	 * 可供外部调用
 	 */
-	public Request buildGetCommonRequest(String url, Map<String, Object> params) {
-		return new Request.Builder()
-				.url(attachHttpGetParams(url, params, true))
-				.build();
+	private Request buildGetCommonRequest(String url,
+	                                      Map<String, Object> query,
+	                                      Map<String, Object> header,
+	                                      Object tag) {
+		Request.Builder builder = new Request.Builder();
+		builder.url(attachHttpGetParams(url, query, true));
+		if (header != null) {
+			for (Map.Entry<String, Object> entry : header.entrySet()) {
+				builder.addHeader(entry.getKey(), entry.getValue().toString());
+			}
+		}
+		if (tag != null) {
+			builder.tag(tag);
+		}
+		return builder.build();
 	}
 
 	/**
 	 * 通用POST请求
 	 * 可供外部调用
 	 */
-	public Request buildPostCommonRequest(String url, Map<String, Object> params) {
-		if (params == null) {
-			params = new HashMap<>();
-		}
+	private Request buildPostCommonRequest(String url,
+	                                       Map<String, Object> body,
+	                                       Map<String, Object> header,
+	                                       Map<String, Object> query,
+	                                       Object tag) {
+		//填装body
 		FormBody.Builder builder = new FormBody.Builder();
-		for (Map.Entry<String, Object> entry : params.entrySet()) {
-			builder.add(entry.getKey(), entry.getValue().toString());
+		if (body != null) {
+			for (Map.Entry<String, Object> entry : body.entrySet()) {
+				builder.add(entry.getKey(), entry.getValue().toString());
+			}
 		}
 		RequestBody requestBody = builder.build();
-		return new Request.Builder()
-				.url(url)
-				.post(requestBody)
-				.build();
+
+		//填装header
+		Request.Builder requestBuilder = new Request.Builder();
+		if (header != null) {
+			for (Map.Entry<String, Object> entry : header.entrySet()) {
+				requestBuilder.addHeader(entry.getKey(), entry.getValue().toString());
+			}
+		}
+		//填装query
+		requestBuilder.url(attachHttpGetParams(url, query, false));
+		requestBuilder.post(requestBody);
+		//配置tag
+		if (tag != null) {
+			requestBuilder.tag(tag);
+		}
+		return requestBuilder.build();
 	}
 
 
-	/**
-	 * =============公开请求方法==============
+	/*
+	 * ==========================公开工具方法===========================
 	 */
+
 	public OkHttpClient getOkHttpClient() {
 		return mOkHttpClient;
 	}
@@ -421,24 +448,61 @@ public class OKHttpClickManager {
 	}
 
 	/**
+	 * 取消所有请求
+	 */
+	public void cancelAll() {
+		if (mOkHttpClient == null) {
+			return;
+		}
+		mOkHttpClient.dispatcher().cancelAll();
+	}
+
+	/**
+	 * 根据Tag取消请求
+	 */
+	public void cancelTag(Object tag) {
+		if (mOkHttpClient == null || tag == null) return;
+		for (Call call : mOkHttpClient.dispatcher().queuedCalls()) {
+			if (tag.equals(call.request().tag())) {
+				call.cancel();
+			}
+		}
+		for (Call call : mOkHttpClient.dispatcher().runningCalls()) {
+			if (tag.equals(call.request().tag())) {
+				call.cancel();
+			}
+		}
+	}
+
+
+	/*
+	 * ==========================公开请求方法===========================
+	 */
+
+	/**
 	 * 自定义request请求头进行请求
 	 *
 	 * @param request  自定义请求
 	 * @param callback 结果回调
 	 */
-	public void custom_request(Request request, ResultCallback callback) {
+	public void customRequest(Request request, ResultCallback callback) {
 		deliveryRequest(request, callback);
 	}
 
 	/**
 	 * 通用GET请求
 	 *
-	 * @param url      url
-	 * @param params   请求参数，无参数可以null
+	 * @param baseUrl  baseUrl
+	 * @param query    Query参数，无参数可以null
 	 * @param callback 结果回调
+	 * @param tag      Call标签
 	 */
-	public void get(String url, Map<String, Object> params, ResultCallback callback) {
-		Request request = buildGetCommonRequest(url, params);
+	public void get(String baseUrl,
+	                Map<String, Object> header,
+	                Map<String, Object> query,
+	                Object tag,
+	                ResultCallback callback) {
+		Request request = buildGetCommonRequest(baseUrl, query, header, null);
 		deliveryRequest(request, callback);
 	}
 
@@ -446,12 +510,20 @@ public class OKHttpClickManager {
 	/**
 	 * 通用POST请求
 	 *
-	 * @param url      url
-	 * @param params   BODY参数，无参数可以null
+	 * @param baseUrl  baseUrl
+	 * @param header   Header参数，无参数可以null
+	 * @param query    Query参数，无参数可以null
+	 * @param body     Body参数，无参数可以null
+	 * @param tag      Call标签
 	 * @param callback 结果回调
 	 */
-	public void post(String url, Map<String, Object> params, ResultCallback callback) {
-		Request request = buildPostCommonRequest(url, params);
+	public void post(String baseUrl,
+	                 Map<String, Object> header,
+	                 Map<String, Object> query,
+	                 Map<String, Object> body,
+	                 Object tag,
+	                 ResultCallback callback) {
+		Request request = buildPostCommonRequest(baseUrl, body, header, query, tag);
 		deliveryRequest(request, callback);
 	}
 

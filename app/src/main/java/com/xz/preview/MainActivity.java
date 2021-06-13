@@ -1,13 +1,13 @@
 package com.xz.preview;
 
+import android.os.Bundle;
+import android.view.View;
+
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.os.Bundle;
-import android.util.Log;
+import com.xz.tool.network.OKHttpClickManager;
 
-import com.xz.tool.network.Test;
-
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
 	private static final String TAG = MainActivity.class.getName();
 
@@ -15,5 +15,11 @@ public class MainActivity extends AppCompatActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		findViewById(R.id.amazing).setOnClickListener(this);
+	}
+
+	@Override
+	public void onClick(View view) {
+		OKHttpClickManager instance = OKHttpClickManager.getInstance();
 	}
 }
