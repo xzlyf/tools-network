@@ -502,7 +502,7 @@ public class OKHttpClickManager {
 	                Map<String, Object> query,
 	                Object tag,
 	                ResultCallback callback) {
-		Request request = buildGetCommonRequest(baseUrl, query, header, null);
+		Request request = buildGetCommonRequest(baseUrl, query, header, tag);
 		deliveryRequest(request, callback);
 	}
 
