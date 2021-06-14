@@ -5,7 +5,7 @@ import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.xz.tool.network.OKHttpClickManager;
+import com.xz.tool.network.OKHttpClientManager;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -20,6 +20,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 	@Override
 	public void onClick(View view) {
-		OKHttpClickManager instance = OKHttpClickManager.getInstance();
+			OKHttpClientManager instance = OKHttpClientManager.getInstance();
 	}
 }

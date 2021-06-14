@@ -10,6 +10,7 @@ import com.google.gson.internal.$Gson$Types;
 import com.xz.tool.network.cookie.PersistenceCookieJar;
 import com.xz.tool.network.utils.DateFormat;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.ParameterizedType;
@@ -51,64 +52,78 @@ import okhttp3.Response;
  * 基于Okhttp3 请求的工具类
  * 回调数据主动回到主线程
  */
-public class OKHttpClickManager {
-	private static final String TAG = OKHttpClickManager.class.getName();
-	private static OKHttpClickManager mInstance;
+public class OKHttpClientManager {
+	private static final String TAG = OKHttpClientManager.class.getName();
+	private static OKHttpClientManager mInstance;
 	private OkHttpClient mOkHttpClient;
 	private Handler mDelivery;
 	private Gson mGson;
 
-	private OKHttpClickManager() {
-		OkHttpClient.Builder okHttpBuilder = new OkHttpClient.Builder();
-		okHttpBuilder.connectTimeout(15, TimeUnit.SECONDS);
-		okHttpBuilder.writeTimeout(15, TimeUnit.SECONDS);
-		okHttpBuilder.readTimeout(15, TimeUnit.SECONDS);
-		//是否自动重连
-		okHttpBuilder.retryOnConnectionFailure(false);
-		//自动管理cookie ---待修复 自动管理cookie
-		//okHttpBuilder.cookieJar(new CookieJar() {
-		//	//这里一定一定一定是HashMap<String, List<Cookie>>,是String,不是url.
-		//	private final HashMap<String, List<Cookie>> cookieStore = new HashMap<>();
-		//
-		//	@Override
-		//	public void saveFromResponse(HttpUrl url, List<Cookie> cookies) {
-		//		cookieStore.put(url.host(), cookies);
-		//	}
-		//
-		//	@Override
-		//	public List<Cookie> loadForRequest(HttpUrl url) {
-		//		List<Cookie> cookies = cookieStore.get(url.host());
-		//		return cookies != null ? cookies : new ArrayList<Cookie>();
-		//
-		//
-		//	}
-		//});
+	/**
+	 * 默认初始化
+	 */
+	private OKHttpClientManager() {
+		this(null);
+	}
 
 
-		okHttpBuilder.cookieJar(new PersistenceCookieJar());
+	/**
+	 * 自定义初始化
+	 *
+	 * @param builder
+	 */
+	private OKHttpClientManager(OkHttpClient.Builder builder) {
+		if (builder == null) {
+			builder = new OkHttpClient.Builder();
+			builder.connectTimeout(15, TimeUnit.SECONDS);
+			builder.writeTimeout(15, TimeUnit.SECONDS);
+			builder.readTimeout(15, TimeUnit.SECONDS);
+			//是否自动重连
+			builder.retryOnConnectionFailure(false);
+			//禁制OkHttp的重定向操作
+			//builder.followRedirects(false);
+			//builder.followSslRedirects(false);
 
-		//禁制OkHttp的重定向操作
-		//okHttpBuilder.followRedirects(false);
-		//okHttpBuilder.followSslRedirects(false);
+			//添加https证书
+			//loadCert(builder);
+			//信任所有证书  不推荐使用
+			trustAll(builder);
+		}
+		//cooKie持久化存储
+		builder.cookieJar(new PersistenceCookieJar());
 
-
-		//添加https证书
-		//loadCert(okHttpBuilder);
-		//信任所有证书  不推荐使用
-		trustAll(okHttpBuilder);
-
-		mOkHttpClient = okHttpBuilder.build();
+		mOkHttpClient = builder.build();
 		mDelivery = new Handler(Looper.getMainLooper());
 		mGson = new GsonBuilder()
-				.setDateFormat(DateFormat.NORM_DATETIME_PATTERN)//gson解析date类型，这里的date类型对应服务器的yyyy-MM-dd HH:mm:ss
+				.setDateFormat(DateFormat.NORM_DATETIME_PATTERN)
 				.create();
 	}
 
-	public static OKHttpClickManager getInstance() {
+
+	/**
+	 * 自定义OkHttpClient
+	 * 建议在Application中进行初始化
+	 */
+	public static void initOKHttpClient(OkHttpClient.Builder builder) {
 		if (mInstance == null) {
-			synchronized (OKHttpClickManager.class) {
+			synchronized (OKHttpClientManager.class) {
 				if (mInstance == null) {
-					mInstance = new OKHttpClickManager();
+					mInstance = new OKHttpClientManager(builder);
+				}
+			}
+		}
+
+	}
+
+	/**
+	 * 获取实例
+	 * 同时会使用默认初始化
+	 */
+	public static OKHttpClientManager getInstance() {
+		if (mInstance == null) {
+			synchronized (OKHttpClientManager.class) {
+				if (mInstance == null) {
+					mInstance = new OKHttpClientManager();
 				}
 			}
 		}
@@ -159,11 +174,9 @@ public class OKHttpClickManager {
 		}
 	}
 
-	///**
-	// * 添加https证书
-	// *
-	// * @param okHttpBuilder
-	// */
+	/**
+	 * 添加https证书
+	 */
 	//private void loadCert(OkHttpClient.Builder okHttpBuilder) {
 	//	//设置https配置
 	//	X509TrustManager trustManager;
@@ -190,8 +203,6 @@ public class OKHttpClickManager {
 	//	}
 	//
 	//}
-
-
 	private X509TrustManager trustManagerForCertificates(InputStream in)
 			throws GeneralSecurityException {
 		CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
@@ -525,6 +536,11 @@ public class OKHttpClickManager {
 	                 ResultCallback callback) {
 		Request request = buildPostCommonRequest(baseUrl, body, header, query, tag);
 		deliveryRequest(request, callback);
+	}
+
+
+	public void downloadUrl(String url, File path) {
+
 	}
 
 
